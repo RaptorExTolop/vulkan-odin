@@ -9,6 +9,8 @@ helloTriangleApplication :: struct {
 	title: cstring,
 	window: glfw.WindowHandle,
 	vulkanInstance: vk.Instance,
+	validationLayers : []cstring, 
+	validationLayersEnabled: bool,
 }
 
 newApplication :: proc(width, height: i32, winTitle: cstring) -> helloTriangleApplication {
@@ -39,6 +41,7 @@ initWindow :: proc(a: ^helloTriangleApplication) {
 
 @private
 initVulkan :: proc(a: ^helloTriangleApplication) {
+	
 	createInstance(a)
 }
 
@@ -69,9 +72,10 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	supportedExtensions := make([]vk.ExtensionProperties, supportedCount)
 	// make sure to delete the data
 	defer delete(supportedExtensions)
-	// 
+	// get the extension properties and put all of them into an array 
 	vk.EnumerateInstanceExtensionProperties(nil, &supportedCount, raw_data(supportedExtensions))
 
+	// for each glfw extension
 	for i in 0..<glfwExtensionCount {
 		required := glfwExtensions[i]
 		found := false
@@ -88,11 +92,45 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 		}
 	}
 
+	a.validationLayers = {"VK_KHRONOS_validation"}
+
+	when ODIN_DEBUG {
+		a.validationLayersEnabled = true
+	} else {
+		a.validationLayersEnabled = false
+	}
+
+	// if we are checking for validation layers get the validation layers
+	requiredLayers: []cstring = a.validationLayersEnabled ? a.validationLayers : {}
+
+	supportedLayersCount: u32
+	vk.EnumerateInstanceLayerProperties(&supportedLayersCount, nil)
+	supportedLayers := make([]vk.LayerProperties, supportedCount)
+	defer delete(supportedLayers)
+	vk.EnumerateInstanceLayerProperties(&supportedCount, raw_data(supportedLayers))
+
+	for required in requiredLayers {
+		found := false 
+		for &layer in supportedLayers {
+			if string(cstring(&layer.layerName[0])) == string(required) {
+				found = true
+				break
+			}
+		}
+		if (!found) {
+			log.fatalf("Required layer not supported: {}\n", required)
+		}
+	}
+
+	extensions := getRequiredInstanceExtensions(a)
+
 	createInfo := vk.InstanceCreateInfo{
 		sType = .INSTANCE_CREATE_INFO,
 		pApplicationInfo = &appInfo,
-		enabledExtensionCount = glfwExtensionCount,
-		ppEnabledExtensionNames = raw_data(glfwExtensions),
+		enabledExtensionCount = u32(len(extensions)),
+		ppEnabledExtensionNames = raw_data(extensions),
+		enabledLayerCount = u32(len(requiredLayers)),
+		ppEnabledLayerNames = raw_data(requiredLayers),
 	}
 
 	result := vk.CreateInstance(&createInfo, nil, &a.vulkanInstance)
@@ -101,6 +139,22 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	}
 	// defer vk.DestroyInstance(a.vulkanInstance, nil)
 }
+
+@private
+getRequiredInstanceExtensions :: proc(a: ^helloTriangleApplication) -> [dynamic]cstring {
+	glfwExtentionCount: u32 = 0
+	glfwExtentions := glfw.GetRequiredInstanceExtensions()
+	glfwExtentionCount = u32(len(glfwExtentions))
+	extensions := make([dynamic]cstring, glfwExtentionCount)
+	defer delete(extensions)
+	copy(extensions[:], glfwExtentions)
+
+	if (a.validationLayersEnabled) {
+		append(&extensions, vk.EXT_DEBUG_UTILS_EXTENSION_NAME)
+	}
+
+	return extensions
+} 
 
 @private
 mainLoop :: proc(a: ^helloTriangleApplication) {
