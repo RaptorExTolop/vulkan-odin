@@ -48,7 +48,9 @@ initVulkan :: proc(a: ^helloTriangleApplication) {
 
 @private
 createInstance :: proc(a: ^helloTriangleApplication) {
-	
+	// load the glfw instance proc address and pass it into vulkan
+	vk.load_proc_addresses_global(cast(rawptr)glfw.GetInstanceProcAddress)
+
 	// create the vulkan application info to create a Vulkan Instance
 	appInfo := vk.ApplicationInfo{
 		sType = .APPLICATION_INFO,
@@ -106,9 +108,8 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	if result != .SUCCESS {
 		log.fatalf("Failed to create VK instance: {}", result)
 	}
-
-	// load the glfw instance proc address and pass it into vulkan
-	vk.load_proc_addresses_global(cast(rawptr)glfw.GetInstanceProcAddress)
+	
+	vk.load_proc_addresses_instance(a.vulkanInstance)
 }
 
 @private
