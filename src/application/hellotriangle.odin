@@ -48,9 +48,7 @@ initVulkan :: proc(a: ^helloTriangleApplication) {
 
 @private
 createInstance :: proc(a: ^helloTriangleApplication) {
-	// load the glfw instance proc address and pass it into vulkan
-	vk.load_proc_addresses_global(cast(rawptr)glfw.GetInstanceProcAddress)
-
+	
 	// create the vulkan application info to create a Vulkan Instance
 	appInfo := vk.ApplicationInfo{
 		sType = .APPLICATION_INFO,
@@ -61,7 +59,7 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 		apiVersion = vk.API_VERSION_1_4,
 	}
 
-	a.validationLayers = {"VK_KHRONOS_validation"}
+	a.validationLayers = {"VK_LAYER_KHRONOS_validation"}
 
 	when ODIN_DEBUG {
 		a.validationLayersEnabled = true
@@ -108,7 +106,9 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	if result != .SUCCESS {
 		log.fatalf("Failed to create VK instance: {}", result)
 	}
-	// defer vk.DestroyInstance(a.vulkanInstance, nil)
+
+	// load the glfw instance proc address and pass it into vulkan
+	vk.load_proc_addresses_global(cast(rawptr)glfw.GetInstanceProcAddress)
 }
 
 @private
