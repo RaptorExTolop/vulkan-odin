@@ -31,7 +31,7 @@ runApplication :: proc(a: ^helloTriangleApplication) {
 
 @private
 initWindow :: proc(a: ^helloTriangleApplication) {
-	glfw.InitHint(glfw.PLATFORM, glfw.PLATFORM_WAYLAND)
+	// glfw.InitHint(glfw.PLATFORM, glfw.PLATFORM_WAYLAND)
 	glfw.Init()
 
 	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
