@@ -1,5 +1,5 @@
 build:
-	odin build .
+	odin build . -debug
 
 build-wayland: build
 

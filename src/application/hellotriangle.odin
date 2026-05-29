@@ -1,5 +1,6 @@
 package hellotriangle
 
+import "core:fmt"
 import "vendor:glfw"
 import vk "vendor:vulkan"
 import "core:log"
@@ -60,12 +61,6 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 		apiVersion = vk.API_VERSION_1_4,
 	}
 
-	// get the extensions and the extension count
-	glfwExtensions := glfw.GetRequiredInstanceExtensions()
-	glfwExtensionCount := u32(len(glfwExtensions))
-
-	
-
 	a.validationLayers = {"VK_KHRONOS_validation"}
 
 	when ODIN_DEBUG {
@@ -83,6 +78,7 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	defer delete(supportedLayers)
 	vk.EnumerateInstanceLayerProperties(&supportedLayersCount, raw_data(supportedLayers))
 
+	fmt.printfln("Req Layers: {}", requiredLayers)
 	for required in requiredLayers {
 		found := false 
 		for &layer in supportedLayers {
@@ -168,6 +164,8 @@ mainLoop :: proc(a: ^helloTriangleApplication) {
 
 @private
 cleanUp :: proc(a: ^helloTriangleApplication) {
+	vk.DestroyInstance(a.vulkanInstance, nil)
+
 	glfw.DestroyWindow(a.window)
 	glfw.Terminate()
 }
