@@ -64,33 +64,7 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	glfwExtensions := glfw.GetRequiredInstanceExtensions()
 	glfwExtensionCount := u32(len(glfwExtensions))
 
-	// num of supported extensions
-	supportedCount: u32
-	// check if the required GLFW extensions are supported by the Vulkan implementation
-	vk.EnumerateInstanceExtensionProperties(nil, &supportedCount, nil)
-	// make an array of the supported extensions
-	supportedExtensions := make([]vk.ExtensionProperties, supportedCount)
-	// make sure to delete the data
-	defer delete(supportedExtensions)
-	// get the extension properties and put all of them into an array 
-	vk.EnumerateInstanceExtensionProperties(nil, &supportedCount, raw_data(supportedExtensions))
-
-	// for each glfw extension
-	for i in 0..<glfwExtensionCount {
-		required := glfwExtensions[i]
-		found := false
-
-		for &ext in supportedExtensions {
-			if string(cstring(&ext.extensionName[0])) == string(required) {
-				found = true
-				break
-			}
-		}
-
-		if (!found) {
-			log.fatalf("Required GLFW extension not supported: {}\n", required)
-		}
-	}
+	
 
 	a.validationLayers = {"VK_KHRONOS_validation"}
 
@@ -105,14 +79,14 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 
 	supportedLayersCount: u32
 	vk.EnumerateInstanceLayerProperties(&supportedLayersCount, nil)
-	supportedLayers := make([]vk.LayerProperties, supportedCount)
+	supportedLayers := make([]vk.LayerProperties, supportedLayersCount)
 	defer delete(supportedLayers)
-	vk.EnumerateInstanceLayerProperties(&supportedCount, raw_data(supportedLayers))
+	vk.EnumerateInstanceLayerProperties(&supportedLayersCount, raw_data(supportedLayers))
 
 	for required in requiredLayers {
 		found := false 
 		for &layer in supportedLayers {
-			if string(cstring(&layer.layerName[0])) == string(required) {
+			if cstring(&layer.layerName[0]) == required {
 				found = true
 				break
 			}
@@ -123,6 +97,7 @@ createInstance :: proc(a: ^helloTriangleApplication) {
 	}
 
 	extensions := getRequiredInstanceExtensions(a)
+	defer delete(extensions)
 
 	createInfo := vk.InstanceCreateInfo{
 		sType = .INSTANCE_CREATE_INFO,
@@ -146,11 +121,38 @@ getRequiredInstanceExtensions :: proc(a: ^helloTriangleApplication) -> [dynamic]
 	glfwExtentions := glfw.GetRequiredInstanceExtensions()
 	glfwExtentionCount = u32(len(glfwExtentions))
 	extensions := make([dynamic]cstring, glfwExtentionCount)
-	defer delete(extensions)
 	copy(extensions[:], glfwExtentions)
 
 	if (a.validationLayersEnabled) {
 		append(&extensions, vk.EXT_DEBUG_UTILS_EXTENSION_NAME)
+	}
+
+	// num of supported extensions
+	supportedCount: u32
+	// check if the required GLFW extensions are supported by the Vulkan implementation
+	vk.EnumerateInstanceExtensionProperties(nil, &supportedCount, nil)
+	// make an array of the supported extensions
+	supportedExtensions := make([]vk.ExtensionProperties, supportedCount)
+	// make sure to delete the data
+	defer delete(supportedExtensions)
+	// get the extension properties and put all of them into an array 
+	vk.EnumerateInstanceExtensionProperties(nil, &supportedCount, raw_data(supportedExtensions))
+
+	// for each glfw extension
+	for i in 0..<glfwExtentionCount {
+		required := glfwExtentions[i]
+		found := false
+
+		for &ext in supportedExtensions {
+			if string(cstring(&ext.extensionName[0])) == string(required) {
+				found = true
+				break
+			}
+		}
+
+		if (!found) {
+			log.fatalf("Required GLFW extension not supported: {}\n", required)
+		}
 	}
 
 	return extensions
